@@ -21,6 +21,7 @@
 import { KHelpers } from "./KHelpers.js";
 import { TheatreActor } from "./TheatreActor.js";
 import { TheatreActorConfig } from "./TheatreActorConfig.js";
+import { TheatreDialog } from "./TheatreDialog.js";
 
 /**
  * ============================================================
@@ -117,15 +118,17 @@ export class Theatre {
     },
   };
 
-  initialize() {
+  async initialize() {
+    this.dialog = new TheatreDialog();
+
     // inject HTML
-    this._injectHTML();
+    await this._injectHTML();
     // socket
     this._initSocket();
     // global listeners
     window.addEventListener("resize", this.handleWindowResize);
     // request a resync if needed
-    this._sendResyncRequest("any");
+    this._sendResyncRequest("any");    
   }
 
   /**
@@ -133,7 +136,7 @@ export class Theatre {
    *
    * @private
    */
-  _injectHTML() {
+  async _injectHTML() {
     /**
      * Theatre Dock + Theatre Bar
      */
@@ -209,122 +212,53 @@ export class Theatre {
      * Theatre Chat Controls
      */
     let chatControls = document.getElementById("chat-controls");
-    let controlButtons = chatControls.getElementsByClassName("control-buttons")[0];
-    let chatForm = document.getElementById("chat-form");
     let chatMessage = document.getElementById("chat-message");
 
-    this.theatreControls = document.createElement("div");
-    this.theatreNavBar = document.createElement("div");
-    this.theatreChatCover = document.createElement("div");
-
-    if (!game.user.isGM && game.settings.get(Theatre.SETTINGS, "gmOnly")) {
-      this.theatreControls.style.display = "none";
-    }
-
-    let imgCover = document.createElement("img");
-    let btnSuppress = document.createElement("div");
-    let iconSuppress = document.createElement("div");
-    let btnEmote = document.createElement("div");
-    let iconEmote = document.createElement("div");
-    //let btnCinema = document.createElement("div");
-    //let iconCinema = document.createElement("div");
-    let btnNarrator;
-    let iconNarrator;
-
-    let btnResync = document.createElement("a");
-    let iconResync = document.createElement("i");
-    let btnQuote = document.createElement("a");
-    let iconQuote = document.createElement("i");
-    let btnDelayEmote = document.createElement("a");
-    let iconDelayEmote = document.createElement("i");
-
-    KHelpers.addClass(this.theatreControls, "theatre-control-group");
-    KHelpers.addClass(this.theatreNavBar, "theatre-control-nav-bar");
-    KHelpers.addClass(this.theatreNavBar, "no-scrollbar");
-    KHelpers.addClass(this.theatreChatCover, "theatre-control-chat-cover");
-    KHelpers.addClass(btnSuppress, "theatre-control-btn");
-    KHelpers.addClass(iconSuppress, "theatre-icon-suppress");
-    KHelpers.addClass(btnEmote, "theatre-control-btn");
-    KHelpers.addClass(iconEmote, "theatre-icon-emote");
-    //KHelpers.addClass(btnCinema,"theatre-control-btn");
-    //KHelpers.addClass(iconCinema,"theatre-icon-cinema");
-    KHelpers.addClass(btnResync, "button");
-    KHelpers.addClass(btnResync, "resync-theatre");
-    KHelpers.addClass(iconResync, "fas");
-    KHelpers.addClass(iconResync, "fa-sync");
-    KHelpers.addClass(btnQuote, "button");
-    KHelpers.addClass(iconQuote, "fas");
-    KHelpers.addClass(iconQuote, "fa-quote-right");
-    KHelpers.addClass(btnDelayEmote, "button");
-    KHelpers.addClass(iconDelayEmote, "fas");
-    KHelpers.addClass(iconDelayEmote, "fa-comment-alt");
-
-    btnEmote.setAttribute("title", game.i18n.localize("Theatre.UI.Title.EmoteSelector"));
-    btnSuppress.setAttribute("title", game.i18n.localize("Theatre.UI.Title.SuppressTheatre"));
-    btnResync.setAttribute(
-      "title",
-      game.user.isGM
-        ? game.i18n.localize("Theatre.UI.Title.ResyncGM")
-        : game.i18n.localize("Theatre.UI.Title.ResyncPlayer")
-    );
-    btnQuote.setAttribute("title", game.i18n.localize("Theatre.UI.Title.QuoteToggle"));
-    btnDelayEmote.setAttribute("title", game.i18n.localize("Theatre.UI.Title.DelayEmoteToggle"));
-    //btnCinema.setAttribute("title",game.i18n.localize("Theatre.UI.Title.CinemaSelector"));
-    btnEmote.addEventListener("click", this.handleBtnEmoteClick);
-    btnSuppress.addEventListener("click", this.handleBtnSuppressClick);
-    btnResync.addEventListener("click", this.handleBtnResyncClick);
-    btnQuote.addEventListener("click", this.handleBtnQuoteClick);
-    btnDelayEmote.addEventListener("click", this.handleBtnDelayEmoteClick);
-    //btnCinema.addEventListener("click", this.handleBtnCinemaClick);
+    // set up theatre controls (nav bar)
+    const theatreControlsHtml = await renderTemplate("modules/theatre/templates/theatre_controls.hbs");
+    this.theatreControls = KHelpers.htmlToElement(theatreControlsHtml);
+    this.theatreControls.querySelector("a#theatre-btn-add-selected-token").addEventListener("click", this.handleBtnAddTokenClick);
+    this.theatreControls.querySelector("a#theatre-btn-clear-stage").addEventListener("click", this.handleBtnClearStageClick);
+    this.theatreNavBar = this.theatreControls.querySelector("div.theatre-control-nav-bar");
     this.theatreNavBar.addEventListener("wheel", this.handleNavBarWheel);
 
-    btnEmote.appendChild(iconEmote);
-    btnSuppress.appendChild(iconSuppress);
-    btnResync.appendChild(iconResync);
-    btnQuote.appendChild(iconQuote);
-    btnDelayEmote.appendChild(iconDelayEmote);
-    //btnCinema.appendChild(iconCinema);
-    this.theatreChatCover.appendChild(imgCover);
+    // nav bar drop
+    const dragDrop = new DragDrop({
+      dragSelector: ".actor",
+      dropSelector: ".theatre-control-nav-bar",
+      callbacks: { drop: this._onNavBarDrop.bind(this) }
+    });
+    dragDrop.bind(this.theatreNavBar);
 
-    this.theatreControls.appendChild(this.theatreNavBar);
-
+    // set up control buttons
+    const theatreControlButtonsHtml = await renderTemplate(
+      "modules/theatre/templates/theatre_control_buttons.hbs", 
+      { isGM: game.user.isGM }
+    );
+    this.theatreControlButtons = KHelpers.htmlToElement(theatreControlButtonsHtml);
+    this.theatreControlButtons.querySelector("#theatre-btn-resync").addEventListener("click", this.handleBtnResyncClick);
+    this.theatreControlButtons.querySelector("#theatre-btn-quote").addEventListener("click", this.handleBtnQuoteClick);
+    this.theatreControlButtons.querySelector("#theatre-btn-delay-emote").addEventListener("click", this.handleBtnDelayEmoteClick);
+    this.theatreControlButtons.querySelector("a#theatre-btn-emote").addEventListener("click", this.handleBtnEmoteClick);
+    this.theatreControlButtons.querySelector("a#theatre-btn-suppress").addEventListener("click", this.handleBtnSuppressClick);
     if (game.user.isGM) {
-      btnNarrator = document.createElement("div");
-      iconNarrator = document.createElement("div");
-      KHelpers.addClass(btnNarrator, "theatre-control-btn");
-      KHelpers.addClass(iconNarrator, "theatre-icon-narrator");
-      btnNarrator.setAttribute("title", game.i18n.localize("Theatre.UI.Title.Narrator"));
-      btnNarrator.appendChild(iconNarrator);
-      btnNarrator.addEventListener("click", this.handleBtnNarratorClick);
-      this.theatreControls.appendChild(btnNarrator);
+      this.theatreControlButtons.querySelector("a#theatre-btn-narrator").addEventListener("click", this.handleBtnNarratorClick);
+    } else if (game.settings.get(Theatre.SETTINGS, "gmOnly")) {
+      this.theatreControls.style.display = "none";
+    }
+       
+    if (
+      (game.user.isGM || !game.settings.get(Theatre.SETTINGS, "gmOnly")) &&
+      (game.settings.get(Theatre.SETTINGS, "theatreControlMode") == "chat")
+    ) {
+      // to do: reintroduce gm only controls for theatre control buttons
     }
 
-    this.theatreControls.appendChild(btnEmote);
-    //this.theatreControls.appendChild(btnCinema);
-    this.theatreControls.appendChild(btnSuppress);
-
-    btnDelayEmote.style["margin"] = "0 4px";
-    btnQuote.style["margin"] = "0 4px";
-    btnResync.style["margin"] = "0 4px";
-
-    if (game.user.isGM || !game.settings.get(Theatre.SETTINGS, "gmOnly")) {
-      if (controlButtons) {
-        controlButtons.style["flex-basis"] = "150px";
-        KHelpers.insertBefore(btnResync, controlButtons.children[0]);
-        KHelpers.insertBefore(btnQuote, btnResync);
-        KHelpers.insertBefore(btnDelayEmote, btnQuote);
-      } else {
-        controlButtons = document.createElement("div");
-        KHelpers.addClass(controlButtons, "control-buttons");
-        controlButtons.style["flex-basis"] = "66px";
-        controlButtons.appendChild(btnDelayEmote);
-        controlButtons.appendChild(btnQuote);
-        controlButtons.appendChild(btnResync);
-        chatControls.appendChild(controlButtons);
-      }
-    }
-
-    KHelpers.insertBefore(this.theatreControls, chatControls);
+    // set up chat image cover
+    this.theatreChatCover = document.createElement("div");
+    KHelpers.addClass(this.theatreChatCover, "theatre-control-chat-cover");
+    let imgCover = document.createElement("img");
+    this.theatreChatCover.appendChild(imgCover);
     KHelpers.insertAfter(this.theatreChatCover, chatMessage);
 
     // bind listener to chat message
@@ -338,13 +272,20 @@ export class Theatre {
     this.theatreEmoteMenu = document.createElement("div");
     KHelpers.addClass(this.theatreEmoteMenu, "theatre-emote-menu");
     KHelpers.addClass(this.theatreEmoteMenu, "app");
-    KHelpers.insertBefore(this.theatreEmoteMenu, this.theatreControls);
-
+    
+    if (game.settings.get(Theatre.SETTINGS, "theatreControlMode") == "chat") {
+      KHelpers.insertBefore(this.theatreControls, chatControls);
+      KHelpers.insertBefore(this.theatreControlButtons, chatControls);
+      KHelpers.insertBefore(this.theatreEmoteMenu, this.theatreControls);
+    }
+    
     /**
      * Tooltip
      */
     this.theatreEmoteMenu.addEventListener("mousemove", this.handleEmoteMenuMouseMove);
   }
+
+
 
   /**
    * Init Module Settings
@@ -379,6 +320,20 @@ export class Theatre {
         clearbox: "Theatre.UI.Settings.displayModeClearBox",
       },
       onChange: (theatreStyle) => Theatre.instance.configTheatreStyle(theatreStyle),
+    });
+
+    game.settings.register(Theatre.SETTINGS, "theatreControlMode", {
+      name: "Theatre.UI.Settings.controlMode",
+      hint: "",
+      scope: "world",
+      config: true,
+      default: "chat",
+      requiresReload: true,
+      type: String,
+      choices: {
+        chat: "Theatre.UI.Settings.controlModeChat",
+        dialog: "Theatre.UI.Settings.controlModeDialog"
+      }
     });
 
     game.settings.register(Theatre.SETTINGS, "theatreImageSize", {
@@ -574,6 +529,23 @@ export class Theatre {
     this.settings.motdNewInfo = game.settings.get(Theatre.SETTINGS, "motdNewInfo") || 1;
     this.settings.ignoreMessagesToChat = game.settings.get(Theatre.SETTINGS, "ignoreMessagesToChat");
     this.settings.quoteType = game.settings.get(Theatre.SETTINGS, "quoteType");
+  }
+
+  /**
+   * Handler for drop actor on nav bar
+   *
+   * @param dragEvent (DragEvent)
+   * 
+   * @private
+   */
+  async _onNavBarDrop(dragEvent) {
+    if (Theatre.DEBUG) console.log("drop on nav bar");
+    console.log("drop");
+
+    const data = JSON.parse(dragEvent.dataTransfer.getData("text/plain"));
+    if ((data.type !== "Actor") || !data.uuid) return;
+    const item = await fromUuid(data.uuid);
+    Theatre.addToNavBar(item);
   }
 
   /**
@@ -5067,7 +5039,7 @@ export class Theatre {
       // as it'll be plugging into the insert workflow when it's truely not a real insert
       if (game.user.isGM) {
         let btnNarrator =
-          Theatre.instance.theatreControls.getElementsByClassName("theatre-icon-narrator")[0].parentNode;
+          Theatre.instance.theatreControlButtons.querySelector("#theatre-btn-narrator");
         let oldSpeakingItem = Theatre.instance.getNavItemById(Theatre.instance.speakingAs);
         let oldSpeakingInsert = Theatre.instance.getInsertById(Theatre.instance.speakingAs);
         let oldSpeakingLabel = Theatre.instance._getLabelFromInsert(oldSpeakingInsert);
@@ -5167,7 +5139,7 @@ export class Theatre {
 
       if (game.user.isGM) {
         let btnNarrator =
-          Theatre.instance.theatreControls.getElementsByClassName("theatre-icon-narrator")[0].parentNode;
+          Theatre.instance.theatreControlButtons.querySelector("#theatre-btn-narrator");
         KHelpers.removeClass(btnNarrator, "theatre-control-nav-bar-item-speakingas");
         // clear narrator
         Theatre.instance.speakingAs = null;
@@ -5698,6 +5670,27 @@ export class Theatre {
     Theatre.instance.lastTyping = now;
     Theatre.instance.setUserTyping(game.user.id, Theatre.instance.speakingAs);
     Theatre.instance._sendTypingEvent();
+  }
+
+  /**
+   * Handle the Add Selected Token(s) to Stage click
+   */
+  handleBtnAddTokenClick() {
+    if (Theatre.DEBUG) console.log("add selected tokens click");
+
+    canvas.tokens.controlled.forEach(token => {
+      if (token.actor && !Theatre.instance.getNavItemById(Theatre._getTheatreId(token.actor))) {
+        Theatre.addToNavBar(token.actor);
+      }
+    });
+  }
+
+  /**
+   * Handle the Clear Stage click
+   */
+  handleBtnClearStageClick() {
+    if (Theatre.DEBUG) console.log("clear stage click");
+    Theatre.clearStage();
   }
 
   /**

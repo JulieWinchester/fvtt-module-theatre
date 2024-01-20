@@ -406,9 +406,9 @@ Hooks.on("renderChatMessage", function (ChatMessage, html, data) {
   return true;
 });
 
-Hooks.on("renderChatLog", function (app, html, data) {
+Hooks.on("renderChatLog", async function (app, html, data) {
   if (data.cssId === "chat-popout") return;
-  theatre.initialize();
+  await theatre.initialize();
   if (!window.Theatre) {
 	window.Theatre = Theatre;
 	window.theatre = theatre;
@@ -824,5 +824,24 @@ Hooks.on("getSceneControlButtons", (controls) => {
     };
     const tokenControls = controls.find((group) => group.name === "token").tools;
     tokenControls.push(suppressTheatreTool);
+  }
+
+  if (game.settings.get(Theatre.SETTINGS, "theatreControlMode") == "dialog") {
+    const theatreDialogControl = {
+      name: "theatreDialog",
+      title: "Theatre.UI.Title.TheatreDialogControl",
+      icon: "fas fa-theater-masks",
+      button: true,
+      onClick: () => {
+        if (Theatre.instance.dialog.rendered) {
+          Theatre.instance.dialog.close({ force: true });
+        } else {
+          Theatre.instance.dialog.render(true);
+        }
+    },
+      visible: true,
+    };
+    const tokenControls = controls.find((group) => group.name === "token").tools;
+    tokenControls.push(theatreDialogControl);
   }
 });

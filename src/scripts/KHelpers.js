@@ -38,6 +38,17 @@ export const KHelpers = (function () {
   }
 
   /**
+   * @param {String} HTML representing a single element
+   * @return {Element}
+   */
+  function htmlToElement(html) {
+    var template = document.createElement('template');
+    html = html.trim(); // Never return a text node of whitespace as the result
+    template.innerHTML = html;
+    return template.content.firstChild;
+  }
+
+  /**
    * Helper to grab a parent class via CSS ClassName
    *
    * @param elem (HTMLElement) : the element to start from.
@@ -70,6 +81,7 @@ export const KHelpers = (function () {
     style: style,
     insertAfter: insertAfter,
     insertBefore: insertBefore,
+    htmlToElement: htmlToElement,
     seekParentClass: seekParentClass,
   };
 })();

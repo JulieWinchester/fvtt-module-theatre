@@ -14,6 +14,8 @@
     "UI": {
       "Chat": { "Narrator": "Narrator" },
       "Title": {
+        "AddSelectedTokens": "Add Selected Token(s) to Stage",
+        "ClearStage": "Clear All Actors from Stage",
         "EmoteSelector": "Emote Selector",
         "SuppressTheatre": "Suppress Theatre",
         "Narrator": "Narrator Mode",
@@ -29,7 +31,9 @@
         "DeleteCustomEmote": "Delete Custom Emote",
         "FontType": "Font Type",
         "FontSize": "Font Size",
-        "FontColor": "Font Color"
+        "FontColor": "Font Color",
+        "TheatreDialogControl": "Theatre Controls",
+        "TheatreDialog": "Theatre Inserts Control"
       },
       "Notification": {
         "CannotMoveOwner": "You must control the actor you wish to move",
@@ -53,6 +57,9 @@
         "ErrorFatal": "Fatal Error, please submit console log (f12 -> console) with bug report"
       },
       "Settings": {
+        "controlMode": "Theatre Controls Mode",
+        "controlModeChat": "Controls in Chat",
+        "controlModeDialog": "Controls as Separate Dialog",
         "displayMode": "Theatre Bar Display Mode",
         "displayModeHint": "The display mode for the text area under a theatre insert. Text Box style is geared for text-based games as it provides a solid background for the text. Light Box style is geared for voice or voice hybrid games with a visual novel look and feel. Clear style is intended for voice only games where text isn't as important since the text *will be difficult to read*; it is more intended as a mode for puppeting the portrait by movements and emotes alone.",
         "displayModeTextBox": "Text Box Style",

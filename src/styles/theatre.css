@@ -1272,18 +1272,6 @@
   background: radial-gradient(closest-side at 50%, red 1%, transparent 99%);
 }
 
-.theatre-icon-suppress {
-  width: 100%;
-  height: 100%;
-  background-image: url("../graphics/btn_suppress.png");
-}
-
-.theatre-icon-emote {
-  width: 100%;
-  height: 100%;
-  background-image: url("../graphics/btn_emote.png");
-}
-
 .theatre-icon-fontsize-small {
   width: 100%;
   height: 100%;
@@ -1306,12 +1294,6 @@
   width: 100%;
   height: 100%;
   background-image: url("../graphics/btn_cinema.png");
-}
-
-.theatre-icon-narrator {
-  width: 100%;
-  height: 100%;
-  background-image: url("../graphics/btn_narrator.png");
 }
 
 .theatre-icon-live {
@@ -1700,6 +1682,43 @@
 
 #ui-left.z-higher, #ui-middle.z-higher {
   z-index: calc(var(--z-index-app) + 1);
+}
+
+div#theatre-dialog section.window-content {
+  background: unset;  
+  color: var(--color-text-light-highlight);
+}
+
+div#theatre-dialog-content {
+  display: flex;
+  flex-direction: column;
+}
+
+div.theatre-control-group i.fas {
+  font-size: var(--font-size-20);
+  line-height: 40px;
+  min-width: 25px;
+}
+
+.control-buttons {
+  flex: 0 0 28px;
+}
+
+.control-buttons i.fas {
+  font-size: var(--font-size-20);
+  line-height: 28px;
+  min-width: 25px;
+}
+
+div#theatre-dialog .control-buttons {
+  display: flex;
+  flex: 0 0 28px;
+  margin: 2px 8px;
+}
+
+div#theatre-dialog a {
+  display: inline-block;
+  text-align: center;
 }
 
 @-moz-document url-prefix() {

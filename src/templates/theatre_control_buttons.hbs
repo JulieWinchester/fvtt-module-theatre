@@ -1,0 +1,28 @@
+<div class="control-buttons">
+  <a class="button" id="theatre-btn-delay-emote" title="{{localize "Theatre.UI.Title.DelayEmoteToggle"}}" style="margin: 0px 4px;">
+    <i class="fas fa-comment-alt"></i>
+  </a>
+  <a class="button" id="theatre-btn-quote" title="{{localize "Theatre.UI.Title.QuoteToggle"}}" style="margin: 0px 4px;">
+    <i class="fas fa-quote-right"></i>
+  </a>
+  <a 
+    id="theatre-btn-resync" 
+    class="button resync-theatre" 
+    title="{{#if isGM}}{{localize "Theatre.UI.Title.ResyncGM"}}{{else}}{{localize "Theatre.UI.Title.ResyncPlayer"}}{{/if}}" 
+    style="margin: 0px 4px;"
+  >
+    <i class="fas fa-sync"></i>
+  </a>
+  <span style="flex: 1"></span>
+  {{#if isGM }}
+  <a class="button" id="theatre-btn-narrator" title="{{localize "Theatre.UI.Title.Narrator"}}" style="margin: 0px 4px;">  
+    <i class="fas fa-bullhorn fa-flip-horizontal"></i>
+  </a>
+  {{/if}}
+  <a class="button" id="theatre-btn-emote" title="{{localize "Theatre.UI.Title.EmoteSelector"}}" style="margin: 0px 4px;">
+    <i class="fas fa-face-laugh"></i>
+  </a>
+  <a class="button" id="theatre-btn-suppress" title="{{localize "Theatre.UI.Title.SuppressTheatre"}}" style="margin: 0px 4px;">
+    <i class="fas fa-eye-low-vision"></i>
+  </a>
+</div>
